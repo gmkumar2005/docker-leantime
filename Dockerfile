@@ -44,4 +44,4 @@ RUN sed -i '/LoadModule rewrite_module/s/^#//g' /etc/apache2/httpd.conf && \
 
 # Expose port 9000 and start php-fpm server
 ENTRYPOINT ["/start.sh"]
-EXPOSE 80
+EXPOSE 8080
