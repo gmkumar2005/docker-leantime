@@ -74,9 +74,11 @@ WORKDIR /var/www/html
 
 RUN set -eux; \
     curl -LJO https://github.com/Leantime/leantime/releases/download/v2.0.15/Leantime-V2.0.15.tar.gz && \
-    tar -zx Leantime-V2.0.15.tar.gz --strip-components=1 ;\
-    rm Leantime-V2.0.15.tar.gz ; \
-    chown -R www-data:www-data . 
+    tar -zxvf  Leantime-V2.0.15.tar.gz --strip-components 1 ;\
+    rm Leantime-V2.0.15.tar.gz ; 
+    
+RUN chown www-data -R .
+
 
 COPY config/custom.ini /usr/local/etc/php/conf.d/custom.ini
 
