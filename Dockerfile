@@ -1,4 +1,4 @@
-FROM php:7.2-fpm-alpine
+FROM registry.access.redhat.com/ubi8/php72
 
 WORKDIR /var/www/html
 
