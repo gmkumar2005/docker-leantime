@@ -41,6 +41,7 @@ COPY config/app.conf  /etc/apache2/conf.d/app.conf
 RUN sed -i '/LoadModule rewrite_module/s/^#//g' /etc/apache2/httpd.conf && \
     sed -i 's#AllowOverride [Nn]one#AllowOverride All#' /etc/apache2/httpd.conf && \
     sed -i '$iLoadModule proxy_module modules/mod_proxy.so' /etc/apache2/httpd.conf
+USER 1000
 
 # Expose port 9000 and start php-fpm server
 ENTRYPOINT ["/start.sh"]
