@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/php72
+FROM registry.redhat.io/ubi8/php72
 
 WORKDIR /var/www/html
 
