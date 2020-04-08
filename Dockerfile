@@ -1,36 +1,82 @@
-FROM registry.redhat.io/ubi8/php72
+# from https://www.drupal.org/docs/8/system-requirements/drupal-8-php-requirements
+FROM php:7.3-apache-stretch
+# TODO switch to buster once https://github.com/docker-library/php/issues/865 is resolved in a clean way (either in the PHP image or in PHP itself)
+
+
+# install the PHP extensions we need
+RUN set -eux; \
+	\
+	if command -v a2enmod; then \
+		a2enmod rewrite; \
+	fi; \
+	\
+	savedAptMark="$(apt-mark showmanual)"; \
+	\
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		libfreetype6-dev \
+		libjpeg-dev \
+		libpng-dev \
+		libpq-dev \
+		libzip-dev \
+	; \
+	\
+	docker-php-ext-configure gd \
+		--with-freetype-dir=/usr \
+		--with-jpeg-dir=/usr \
+		--with-png-dir=/usr \
+	; \
+	\
+	docker-php-ext-install -j "$(nproc)" \
+		gd \
+		opcache \
+		pdo_mysql \
+		pdo_pgsql \
+		zip \
+	; \
+	\
+# reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
+	apt-mark auto '.*' > /dev/null; \
+	apt-mark manual $savedAptMark; \
+	ldd "$(php -r 'echo ini_get("extension_dir");')"/*.so \
+		| awk '/=>/ { print $3 }' \
+		| sort -u \
+		| xargs -r dpkg-query -S \
+		| cut -d: -f1 \
+		| sort -u \
+		| xargs -rt apt-mark manual; \
+	\
+	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+	rm -rf /var/lib/apt/lists/*
+
+# set recommended PHP.ini settings
+# see https://secure.php.net/manual/en/opcache.installation.php
+RUN { \
+		echo 'opcache.memory_consumption=128'; \
+		echo 'opcache.interned_strings_buffer=8'; \
+		echo 'opcache.max_accelerated_files=4000'; \
+		echo 'opcache.revalidate_freq=60'; \
+		echo 'opcache.fast_shutdown=1'; \
+	} > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
 WORKDIR /var/www/html
 
-# Install dependencies
-RUN apk update && apk add --no-cache \
-    build-base \
-    gcc \
-    mysql-client \
-    freetype libpng libjpeg-turbo freetype-dev libpng-dev libjpeg-turbo-dev \
-    icu-libs \
-    jpegoptim optipng pngquant gifsicle \
-    git \
-    npm \
-    supervisor \
-    apache2 \
-    apache2-ctl \
-    apache2-proxy
+# https://www.drupal.org/node/3060/release
+# ENV DRUPAL_VERSION 8.8.5
+# ENV DRUPAL_MD5 11e595f6aa42fca4ab4423bff0b09c28
 
-# Installing extensions
-RUN docker-php-ext-install mysqli pdo_mysql mbstring exif pcntl pdo bcmath
-RUN docker-php-ext-configure gd --with-gd --with-jpeg-dir=/usr/include/ --with-png-dir=/usr/include/
-RUN docker-php-ext-install gd
+# RUN set -eux; \
+#	curl -fSL "https://ftp.drupal.org/files/projects/drupal-${DRUPAL_VERSION}.tar.gz" -o drupal.tar.gz; \
+#	echo "${DRUPAL_MD5} *drupal.tar.gz" | md5sum -c -; \
+#	tar -xz --strip-components=1 -f drupal.tar.gz; \
+#	rm drupal.tar.gz; \
+#	chown -R www-data:www-data . 
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-RUN curl -LJO https://github.com/Leantime/leantime/releases/download/v2.0.15/Leantime-V2.0.15.tar.gz && \
-    tar -zxvf Leantime-V2.0.15.tar.gz --strip-components 1
-
-RUN chown www-data -R .
-
-COPY ./start.sh /start.sh
-RUN chmod +x /start.sh
+RUN set -eux; \
+    curl -LJO https://github.com/Leantime/leantime/releases/download/v2.0.15/Leantime-V2.0.15.tar.gz && \
+    tar -zx Leantime-V2.0.15.tar.gz --strip-components=1 ;\
+    rm Leantime-V2.0.15.tar.gz ; \
+    chown -R www-data:www-data sites modules themes
 
 COPY config/custom.ini /usr/local/etc/php/conf.d/custom.ini
 
@@ -41,8 +87,8 @@ COPY config/app.conf  /etc/apache2/conf.d/app.conf
 RUN sed -i '/LoadModule rewrite_module/s/^#//g' /etc/apache2/httpd.conf && \
     sed -i 's#AllowOverride [Nn]one#AllowOverride All#' /etc/apache2/httpd.conf && \
     sed -i '$iLoadModule proxy_module modules/mod_proxy.so' /etc/apache2/httpd.conf
-USER 1000
 
-# Expose port 9000 and start php-fpm server
-ENTRYPOINT ["/start.sh"]
+USER 1001
+
+# vim:set ft=dockerfile:
 EXPOSE 8080
