@@ -40,7 +40,7 @@ RUN curl -LJO https://github.com/Leantime/leantime/releases/download/v2.0.15/Lea
 
 RUN rm Leantime-V2.0.15.tar.gz
 RUN composer require vlucas/phpdotenv
-COPY src/ /var/www/html/public/
+# COPY src/ /var/www/html/public/
 COPY config/configuration.php config/configuration.php
 # Make sure files/folders needed by the processes are accessable when they run under the nobody user
 RUN chown -R nobody.nobody /var/www/html && \
