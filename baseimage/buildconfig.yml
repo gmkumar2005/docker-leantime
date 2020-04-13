@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: BuildConfig
+metadata: 
+  annotations: 
+    description: "Defines how to build the application"
+    template.alpha.openshift.io/wait-for-ready: "true"
+  name: "php-nginx-baseimage"
+spec: 
+  output: 
+    to: 
+      kind: ImageStreamTag
+      name: "php-nginx-baseimage:latest"
+  source: 
+    contextDir: "baseimage"
+    git: 
+      ref: "master"
+      uri: "https://github.com/gmkumar2005/docker-leantime.git"
+    type: Git
+  strategy: 
+    dockerStrategy: 
+      dockerfilePath: Dockerfile
+    type: Docker
+  triggers: 
+    - 
+      type: ImageChange
+    - 
+      type: ConfigChange
+    - 
+      github: 
+        secret: "secret"
+      type: GitHub
