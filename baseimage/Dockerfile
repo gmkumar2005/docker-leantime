@@ -1,4 +1,4 @@
-FROM  leantimedev/leantime-basebuild:latest
+FROM  docker-registry.default.svc:5000/leantimedev/leantime-build:latest
 LABEL Maintainer="Kiran Kumar Mallru" \
       Description="Lightweight container with Nginx 1.16 & PHP-FPM 7.3 based on Alpine Linux. based on https://github.com/TrafeX/docker-php-nginx. Credits Tim de Pater"
 
