@@ -21,7 +21,7 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 RUN mkdir -p /var/www/html
 RUN mkdir -p /var/www/html/public
 
-RUN git clone https://github.com/gmkumar2005/leantime.git . --depth 1
+RUN git clone https://github.com/gmkumar2005/leantime.git /var/www/html --depth 1
 
 RUN rm config/configuration.php
 
