@@ -21,10 +21,7 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 RUN mkdir -p /var/www/html
 RUN mkdir -p /var/www/html/public
 
-RUN curl -LJO https://github.com/Leantime/leantime/releases/download/v2.0.15/Leantime-V2.0.15.tar.gz && \
-    tar -zxf Leantime-V2.0.15.tar.gz --strip-components 1
-
-RUN rm Leantime-V2.0.15.tar.gz
+RUN git clone https://github.com/gmkumar2005/leantime.git . --depth 1
 
 RUN rm config/configuration.php
 
