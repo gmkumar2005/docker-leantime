@@ -21,7 +21,7 @@ RUN git clone https://github.com/gmkumar2005/leantime.git  --depth 1
 # Setup document root
 RUN mkdir -p /var/www/html
 RUN mkdir -p /var/www/html/public
-RUN cp -r leantime/ /var/www/html/
+RUN mv leantime/* .
 RUN rm config/configuration.php
 
 # Make sure files/folders needed by the processes are accessable when they run under the nobody user
