@@ -17,11 +17,10 @@ COPY php.ini /etc/php7/conf.d/custom.ini
 # Configure supervisord
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Setup document root
-RUN mkdir -p /var/www/html
-RUN mkdir -p /var/www/html/public
-
 RUN git clone https://github.com/gmkumar2005/leantime.git /var/www/html --depth 1
+# Setup document root
+# RUN mkdir -p /var/www/html
+RUN mkdir -p /var/www/html/public
 
 RUN rm config/configuration.php
 
