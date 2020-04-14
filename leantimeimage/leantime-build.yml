@@ -1,0 +1,47 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewBuild
+  creationTimestamp: '2020-04-12T16:29:38Z'
+  labels:
+    build: leantime-build
+  name: leantime-build
+  namespace: leantimedev
+  resourceVersion: '9819638'
+  selfLink: >-
+    /apis/build.openshift.io/v1/namespaces/leantimedev/buildconfigs/leantime-build
+  uid: cda53f57-7cda-11ea-982c-000d3aa464ae
+spec:
+  failedBuildsHistoryLimit: 5
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'leantime-build:latest'
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    contextDir: leantimeimage
+    git:
+      ref: master
+      uri: 'https://github.com/gmkumar2005/docker-leantime.git'
+    type: Git
+  strategy:
+    dockerStrategy:
+      from:
+        kind: ImageStreamTag
+        name: 'leantime-basebuild:latest'
+        namespace: leantimedev
+    type: Docker
+  successfulBuildsHistoryLimit: 5
+  triggers:
+    - github:
+        secret: I6me4I8KnqA6oqo-oJgU
+      type: GitHub
+    - generic:
+        secret: 4_OnsWUN1Svxn1YY-yeg
+      type: Generic
+status:
+  lastVersion: 2

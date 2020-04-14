@@ -1,0 +1,379 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+labels: 
+  app: leantime
+  template: leantime-mysql-persistent
+message: |-
+    The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.
+    For more information about using this template, including OpenShift considerations, see https://github.com/gmkumar2005/docker-leantime/blob/master/README.md
+metadata: 
+  annotations: 
+    description: "Leantime is an open source project management system for small teams and startups written in PHP, Javascript using MySQL. For more information about using this template, including OpenShift considerations, see https://github.com/gmkumar2005/docker-leantime/blob/master/README.md"
+    icon: play
+    iconClass: icon-play
+    openshift.io/display-name: "Leantime + MySQL"
+    openshift.io/documentation-url: "https://github.com/Leantime/leantime"
+    openshift.io/long-description: "This template defines resources needed to develop a Leantime application, including a build configuration, application deployment configuration, and database deployment configuration."
+    openshift.io/provider-display-name: "Parkar Consulting Group LLC."
+    openshift.io/support-url: "https://github.com/Leantime/docker-leantime/issues"
+    tags: "quickstart,php,leantime, timesheet, calender, kanban"
+    template.openshift.io/bindable: "false"
+  name: leantime
+objects: 
+  - kind: Secret
+    apiVersion: v1
+    metadata: 
+      name: "${NAME}"
+    stringData: 
+      database-password: "${DATABASE_PASSWORD}"
+      database-user: "${DATABASE_USER}"
+      leantime-secret-token: "${LEANTIME_SECRET_TOKEN}"
+      leantime-security-salt: "${LEANTIME_SECURITY_SALT}"
+  - kind: Service
+    apiVersion: v1
+    metadata: 
+      annotations: 
+        description: "Exposes and load balances the application pods"
+        service.alpha.openshift.io/dependencies: "[{\"name\": \"${DATABASE_SERVICE_NAME}\", \"kind\": \"Service\"}]"
+      name: "${NAME}"
+    spec: 
+      ports: 
+        - name: web
+          port: 8080
+          targetPort: 8080
+      selector: 
+        name: "${NAME}"
+  - kind: Route
+    apiVersion: v1
+    metadata: 
+      name: "${NAME}"
+    spec: 
+      host: "${APPLICATION_DOMAIN}"
+      to: 
+        kind: Service
+        name: "${NAME}"
+  - kind: ImageStream
+    apiVersion: v1
+    metadata: 
+      annotations: 
+        description: "Keeps track of changes in the application image"
+      name: "${NAME}"
+  - kind: ImageStream
+    name: phpbase
+    apiVersion: v1
+    metadata:
+      annotations: 
+        description: "PHP alpine base"
+      name: phpbase 
+    tags:
+      - annotations: 
+          description: "PHP alpine base"
+        name: phpbase 
+        from:
+          kind: DockerImage
+          name: 'php:7.3-fpm-alpine'
+        generation: 1
+        importPolicy: {}
+        name: 7.3-fpm-alpine
+        referencePolicy:
+          type: Source
+  - kind: BuildConfig
+    apiVersion: v1
+    metadata: 
+      annotations: 
+        description: "Defines how to build the application"
+        template.alpha.openshift.io/wait-for-ready: "true"
+      name: "${NAME}"
+    spec: 
+      output: 
+        to: 
+          kind: ImageStreamTag
+          name: "${NAME}:latest"
+      source: 
+        contextDir: "${CONTEXT_DIR}"
+        git: 
+          ref: "${SOURCE_REPOSITORY_REF}"
+          uri: "${SOURCE_REPOSITORY_URL}"
+        type: Git
+      strategy: 
+        dockerStrategy: 
+          dockerfilePath: Dockerfile
+        type: Docker
+      triggers: 
+        - 
+          type: ImageChange
+        - 
+          type: ConfigChange
+        - 
+          github: 
+            secret: "${GITHUB_WEBHOOK_SECRET}"
+          type: GitHub
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata: 
+      annotations: 
+        description: "Defines how to deploy the application server"
+        template.alpha.openshift.io/wait-for-ready: "true"
+      name: "${NAME}"
+    spec: 
+      replicas: 1
+      selector: 
+        name: "${NAME}"
+      strategy: 
+        type: Recreate
+      template: 
+        metadata: 
+          labels: 
+            name: "${NAME}"
+          name: "${NAME}"
+        spec: 
+          containers: 
+            - 
+              env: 
+                - 
+                  name: DATABASE_HOST
+                  value: "${DATABASE_SERVICE_NAME}"
+                - 
+                  name: DATABASE_ENGINE
+                  value: "${DATABASE_ENGINE}"
+                - 
+                  name: DATABASE_NAME
+                  value: "${DATABASE_NAME}"
+                - 
+                  name: DATABASE_USER
+                  valueFrom: 
+                    secretKeyRef: 
+                      key: database-user
+                      name: "${NAME}"
+                - 
+                  name: DATABASE_PASSWORD
+                  valueFrom: 
+                    secretKeyRef: 
+                      key: database-password
+                      name: "${NAME}"
+                - 
+                  name: LEANTIME_SECRET_TOKEN
+                  valueFrom: 
+                    secretKeyRef: 
+                      key: leantime-secret-token
+                      name: "${NAME}"
+                - 
+                  name: LEANTIME_SECURITY_SALT
+                  valueFrom: 
+                    secretKeyRef: 
+                      key: leantime-security-salt
+                      name: "${NAME}"
+                - 
+                  name: OPCACHE_REVALIDATE_FREQ
+                  value: "${OPCACHE_REVALIDATE_FREQ}"
+              image: " "
+              resources: 
+                limits: 
+                  memory: "${MEMORY_LIMIT}"
+              name : "${NAME}"
+      triggers: 
+        - 
+          imageChangeParams: 
+            automatic: true
+            containerNames: 
+              - leantime
+            from: 
+              kind: ImageStreamTag
+              name: "${NAME}:latest"
+          type: ImageChange
+        - 
+          type: ConfigChange
+  - kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata: 
+      name: "${DATABASE_SERVICE_NAME}"
+    spec: 
+      accessModes: 
+        - ReadWriteOnce
+      resources: 
+        requests: 
+          storage: "${VOLUME_CAPACITY}"
+  - kind: Service
+    apiVersion: v1
+    metadata: 
+      annotations: 
+        description: "Exposes the database server"
+      name: "${DATABASE_SERVICE_NAME}"
+    spec: 
+      ports: 
+        - 
+          name: mysql
+          port: 3306
+          targetPort: 3306
+      selector: 
+        name: "${DATABASE_SERVICE_NAME}"
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata: 
+      annotations: 
+        description: "Defines how to deploy the database"
+        template.alpha.openshift.io/wait-for-ready: "true"
+      name: "${DATABASE_SERVICE_NAME}"
+    spec: 
+      replicas: 1
+      selector: 
+        name: "${DATABASE_SERVICE_NAME}"
+      strategy: 
+        type: Recreate
+      template: 
+        metadata: 
+          labels: 
+            name: "${DATABASE_SERVICE_NAME}"
+          name: "${DATABASE_SERVICE_NAME}"
+        spec: 
+          containers: 
+            - 
+              env: 
+                - 
+                  name: MYSQL_USER
+                  valueFrom: 
+                    secretKeyRef: 
+                      key: database-user
+                      name: "${NAME}"
+                - 
+                  name: MYSQL_PASSWORD
+                  valueFrom: 
+                    secretKeyRef: 
+                      key: database-password
+                      name: "${NAME}"
+                - 
+                  name: MYSQL_DATABASE
+                  value: "${DATABASE_NAME}"
+              image: " "
+              livenessProbe: 
+                initialDelaySeconds: 30
+                tcpSocket: 
+                  port: 3306
+                timeoutSeconds: 1
+              name: mysql
+              ports: 
+                - 
+                  containerPort: 3306
+              readinessProbe: 
+                exec: 
+                  command: 
+                    - /bin/sh
+                    - "-i"
+                    - "-c"
+                    - "MYSQL_PWD='${DATABASE_PASSWORD}' mysql -h 127.0.0.1 -u ${DATABASE_USER} -D ${DATABASE_NAME} -e 'SELECT 1'"
+                initialDelaySeconds: 5
+                timeoutSeconds: 1
+              resources: 
+                limits: 
+                  memory: "${MEMORY_MYSQL_LIMIT}"
+              volumeMounts: 
+                - 
+                  mountPath: /var/lib/mysql/data
+                  name: "${DATABASE_SERVICE_NAME}-data"
+          volumes: 
+            - 
+              name: "${DATABASE_SERVICE_NAME}-data"
+              persistentVolumeClaim: 
+                claimName: "${DATABASE_SERVICE_NAME}"
+      triggers: 
+        - 
+          imageChangeParams: 
+            automatic: true
+            containerNames: 
+              - mysql
+            from: 
+              kind: ImageStreamTag
+              name: "mysql:5.7"
+              namespace: openshift
+          type: ImageChange
+        - 
+          type: ConfigChange
+parameters: 
+  - displayName: Name
+    description: "The name assigned to all of the frontend objects defined in this template."
+    name: NAME
+    required: true
+    value: leantime
+  - displayName: Namespace
+    description: "The OpenShift Namespace where the ImageStream resides."
+    name: NAMESPACE
+    required: true
+    value: leantimedev
+  - displayName: "PHP Version"
+    description: "Version of PHP image to be used (7.2-fpm-alpine or latest)."
+    name: PHP_VERSION
+    required: true
+    value: 7.2-fpm-alpine
+  - displayName: "Memory Limit"
+    description: "Maximum amount of memory the LEANTIME container can use."
+    name: MEMORY_LIMIT
+    required: true
+    value: 512Mi
+  - displayName: "Memory Limit (MySQL)"
+    description: "Maximum amount of memory the MySQL container can use."
+    name: MEMORY_MYSQL_LIMIT
+    required: true
+    value: 512Mi
+  - displayName: "Volume Capacity"
+    description: "Volume space available for data, e.g. 512Mi, 2Gi"
+    name: VOLUME_CAPACITY
+    required: true
+    value: 1Gi
+  - displayName: "Git Repository URL"
+    description: "The URL of the repository with your application source code."
+    name: SOURCE_REPOSITORY_URL
+    required: true
+    value: "https://github.com/gmkumar2005/docker-leantime.git"
+  - displayName: "Git Reference"
+    description: "Set this to a branch name, tag or other ref of your repository if you are not using the default branch."
+    name: SOURCE_REPOSITORY_REF
+  - displayName: "Context Directory"
+    description: "Set this to the relative path to your project if it is not in the root of your repository."
+    name: CONTEXT_DIR
+  - displayName: "Application Hostname"
+    description: "The exposed hostname that will route to the LEANTIME service, if left blank a value will be defaulted."
+    name: APPLICATION_DOMAIN
+  - displayName: "GitHub Webhook Secret"
+    description: "Github trigger secret.  A difficult to guess string encoded as part of the webhook URL.  Not encrypted."
+    from: "[a-zA-Z0-9]{40}"
+    generate: expression
+    name: GITHUB_WEBHOOK_SECRET
+  - displayName: "Database Service Name"
+    description: "Database Service Name"
+    name: DATABASE_SERVICE_NAME
+    required: true
+    value: mysql
+  - displayName: "Database Engine"
+    description: "Database engine:  mysql (default)."
+    name: DATABASE_ENGINE
+    required: true
+    value: mysql
+  - displayName: "Database Name"
+    name: DATABASE_NAME
+    required: true
+    value: leantime
+  - displayName: "Database User"
+    name: DATABASE_USER
+    required: true
+    value: leantime
+  - displayName: "Database Password"
+    from: "[a-zA-Z0-9]{16}"
+    generate: expression
+    name: DATABASE_PASSWORD
+  - displayName: "Leantimme secret token"
+    description: "Set this to a long random string."
+    from: "[\\w]{50}"
+    generate: expression
+    name: LEANTIME_SECRET_TOKEN
+  - displayName: "Leantime Security Salt"
+    description: "Security salt for session hash."
+    from: "[a-zA-Z0-9]{40}"
+    generate: expression
+    name: LEANTIME_SECURITY_SALT
+  - displayName: "OPcache Revalidation Frequency"
+    description: "How often to check script timestamps for updates, in seconds. 0 will result in OPcache checking for updates on every request."
+    name: OPCACHE_REVALIDATE_FREQ
+    value: "2"
+  - displayName: "Custom Composer Mirror URL"
+    description: "The custom Composer mirror URL"
+    name: COMPOSER_MIRROR

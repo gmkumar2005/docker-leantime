@@ -25,10 +25,10 @@ RUN rm /etc/nginx/conf.d/default.conf
 
 # Configure PHP-FPM
 COPY config/fpm-pool.conf /etc/php7/php-fpm.d/www.conf
-# COPY config/fpm-pool.conf /usr/local/etc/php-fpm.d/www.conf
+COPY config/fpm-pool.conf /usr/local/etc/php-fpm.d/www.conf
 COPY config/php.ini /etc/php7/conf.d/custom.ini
 # use default value variables_order = "GPCS" 
-# RUN sed -i 's/variables_order/;&/' /etc/php7/php.ini
+#RUN sed -i 's/variables_order/;&/' /etc/php7/php.ini
 # Configure supervisord
 COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
@@ -40,7 +40,7 @@ RUN curl -LJO https://github.com/Leantime/leantime/releases/download/v2.0.15/Lea
 
 RUN rm Leantime-V2.0.15.tar.gz
 RUN composer require vlucas/phpdotenv
-# COPY src/ /var/www/html/public/
+COPY src/ /var/www/html/public/
 COPY config/configuration.php config/configuration.php
 # Make sure files/folders needed by the processes are accessable when they run under the nobody user
 RUN chown -R nobody.nobody /var/www/html && \
