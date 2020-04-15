@@ -30,6 +30,7 @@ RUN curl -LJ ${LEANTIME_RELEASE_URL}  -o  Leantimerelease.tar.gz && \
 #RUN mkdir -p /var/www/html/public
 RUN rm Leantimerelease.tar.gz
 RUN rm config/configuration.php
+RUN rm config/configuration.sample.php
 
 # Make sure files/folders needed by the processes are accessable when they run under the nobody user
 RUN chown -R nobody.nobody /var/www/html 
