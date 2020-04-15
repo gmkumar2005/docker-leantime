@@ -17,12 +17,14 @@ COPY php.ini /etc/php7/conf.d/custom.ini
 # Configure supervisord
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-RUN git clone https://github.com/gmkumar2005/leantime.git  leantime --depth 1
+# RUN git clone https://github.com/gmkumar2005/leantime.git  leantime --depth 1
 # Setup document root
 RUN mkdir -p /var/www/html
-RUN mkdir -p /var/www/html/public
-RUN cp -r  leantime/* .
-RUN rm -rf leantime 
+RUN curl -LJO https://github.com/Leantime/leantime/releases/download/v2.0.15/Leantime-V2.0.15.tar.gz  Leantimerelease.tar.gz && \
+    tar -zxvf Leantimerelease.tar.gz --strip-components 1
+
+#RUN mkdir -p /var/www/html/public
+RUN rm Leantimerelease.tar.gz
 RUN rm config/configuration.php
 
 # Make sure files/folders needed by the processes are accessable when they run under the nobody user
