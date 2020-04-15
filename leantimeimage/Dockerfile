@@ -20,7 +20,11 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # RUN git clone https://github.com/gmkumar2005/leantime.git  leantime --depth 1
 # Setup document root
 RUN mkdir -p /var/www/html
-RUN curl -LJsS https://github.com/Leantime/leantime/releases/download/v2.0.15/Leantime-V2.0.15.tar.gz  -o  Leantimerelease.tar.gz && \
+# RUN curl -LJsS https://github.com/Leantime/leantime/releases/download/v2.0.15/Leantime-V2.0.15.tar.gz  -o  Leantimerelease.tar.gz && \
+  #  tar -zxf Leantimerelease.tar.gz --strip-components 1
+
+    
+RUN curl -LJsS ${LEANTIME_RELEASE_URL}  -o  Leantimerelease.tar.gz && \
     tar -zxf Leantimerelease.tar.gz --strip-components 1
 
 #RUN mkdir -p /var/www/html/public
